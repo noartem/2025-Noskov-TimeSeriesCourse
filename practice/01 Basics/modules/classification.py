@@ -1,12 +1,16 @@
 import numpy as np
-
-from modules.metrics import *
+from typing import Self
 from modules.utils import z_normalize
+from modules.metrics import ED_distance, DTW_distance, norm_ED_distance
+
+# from modules.metrics import *
 
 
-default_metrics_params = {'euclidean': {'normalize': True},
-                         'dtw': {'normalize': True, 'r': 0.05}
-                         }
+default_metrics_params = {
+    "euclidean": {"normalize": True},
+    "dtw": {"normalize": True, "r": 0.05},
+}
+
 
 class TimeSeriesKNN:
     """
@@ -19,15 +23,18 @@ class TimeSeriesKNN:
              Options: {euclidean, dtw}
     metric_params: dictionary containing parameters for the distance metric being used
     """
-    
-    def __init__(self, n_neighbors: int = 3, metric: str = 'euclidean', metric_params: dict | None = None) -> None:
 
+    def __init__(
+        self,
+        n_neighbors: int = 3,
+        metric: str = "euclidean",
+        metric_params: dict | None = None,
+    ) -> None:
         self.n_neighbors: int = n_neighbors
         self.metric: str = metric
         self.metric_params: dict | None = default_metrics_params[metric].copy()
         if metric_params is not None:
             self.metric_params.update(metric_params)
-
 
     def fit(self, X_train: np.ndarray, Y_train: np.ndarray) -> Self:
         """
@@ -37,27 +44,25 @@ class TimeSeriesKNN:
         ----------
         X_train: train set with shape (ts_number, ts_length)
         Y_train: labels of the train set
-        
+
         Returns
         -------
         self: the fitted model
         """
-       
         self.X_train = X_train
         self.Y_train = Y_train
 
         return self
 
-
     def _distance(self, x_train: np.ndarray, x_test: np.ndarray) -> float:
         """
         Compute distance between the train and test samples
-        
+
         Parameters
         ----------
         x_train: sample of the train set
         x_test: sample of the test set
-        
+
         Returns
         -------
         dist: distance between the train and test samples
@@ -65,10 +70,21 @@ class TimeSeriesKNN:
 
         dist = 0
 
-        # INSERT YOUR CODE
+        if self.metric == "euclidean":
+            if self.metric_params.get("normalize", False):
+                dist = norm_ED_distance(x_train, x_test)
+            else:
+                dist = ED_distance(x_train, x_test)
+        elif self.metric == "dtw":
+            if self.metric_params.get("normalize", False):
+                x_train = z_normalize(x_train)
+                x_test = z_normalize(x_test)
+
+            dist = DTW_distance(x_train, x_test, r=self.metric_params["r"])
+        else:
+            raise ValueError(f"Metric '{self.metric}' is not supported.")
 
         return dist
-
 
     def _find_neighbors(self, x_test: np.ndarray) -> list[tuple[float, int]]:
         """
@@ -77,7 +93,7 @@ class TimeSeriesKNN:
         Parameters
         ----------
         x_test: sample of the test set
-        
+
         Returns
         -------
         neighbors: k nearest neighbors (distance between neighbor and test sample, neighbor label) for test sample
@@ -85,10 +101,16 @@ class TimeSeriesKNN:
 
         neighbors = []
 
-        # INSERT YOUR CODE
+        all_distances = []
+        for i in range(len(self.X_train)):
+            dist = self._distance(self.X_train[i], x_test)
+            all_distances.append((dist, self.Y_train[i]))
+
+        all_distances.sort(key=lambda x: x[0])
+
+        neighbors = all_distances[: self.n_neighbors]
 
         return neighbors
-
 
     def predict(self, X_test: np.ndarray) -> np.ndarray:
         """
@@ -105,7 +127,10 @@ class TimeSeriesKNN:
 
         y_pred = []
 
-        # INSERT YOUR CODE
+        for x_test in X_test:
+            neighbors = self._find_neighbors(x_test)
+            labels = [label for _, label in neighbors]
+            y_pred.append(max(set(labels), key=labels.count))
 
         return np.array(y_pred)
 
@@ -126,8 +151,8 @@ def calculate_accuracy(y_true: np.ndarray, y_pred: np.ndarray) -> float:
 
     score = 0
     for i in range(len(y_true)):
-        if (y_pred[i] == y_true[i]):
+        if y_pred[i] == y_true[i]:
             score = score + 1
-    score = score/len(y_true)
+    score = score / len(y_true)
 
     return score

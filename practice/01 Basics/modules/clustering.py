@@ -19,13 +19,11 @@ class TimeSeriesHierarchicalClustering:
             Options: {single, complete, average, weighted}
     """
 
-    def __init__(self, n_clusters: int = 3, method: str = 'complete') -> None:
-
+    def __init__(self, n_clusters: int = 3, method: str = "complete") -> None:
         self.n_clusters: int = n_clusters
         self.method: str = method
         self.model: AgglomerativeClustering | None = None
         self.linkage_matrix: np.ndarray | None = None
-
 
     def _create_linkage_matrix(self) -> np.ndarray:
         """
@@ -48,10 +46,11 @@ class TimeSeriesHierarchicalClustering:
                     current_count += counts[child_idx - n_samples]
             counts[i] = current_count
 
-        linkage_matrix = np.column_stack([self.model.children_, self.model.distances_, counts]).astype(float)
+        linkage_matrix = np.column_stack(
+            [self.model.children_, self.model.distances_, counts]
+        ).astype(float)
 
         return linkage_matrix
-
 
     def fit(self, distance_matrix: np.ndarray) -> Self:
         """
@@ -60,16 +59,23 @@ class TimeSeriesHierarchicalClustering:
         Parameters
         ----------
         distance_matrix: distance matrix between instances of dataset with shape (ts_number, ts_number)
-        
+
         Returns
         -------
         self: the fitted model
         """
+        self.model = AgglomerativeClustering(
+            n_clusters=self.n_clusters,
+            metric="precomputed",
+            linkage=self.method,
+            compute_distances=True,
+        )
+        self.model.fit(distance_matrix)
 
-       # INSERT YOUR CODE
+        self.linkage_matrix = self._create_linkage_matrix()
+        self.labels_ = self.model.labels_
 
         return self
-
 
     def fit_predict(self, distance_matrix: np.ndarray) -> np.ndarray:
         """
@@ -78,19 +84,25 @@ class TimeSeriesHierarchicalClustering:
         Parameters
         ----------
         distance_matrix: distance matrix between instances of dataset with shape (ts_number, ts_number)
-        
+
         Returns
         -------
-            predicted labels 
+            predicted labels
         """
 
         self.fit(distance_matrix)
 
         return self.labels_
 
-
-    def _draw_timeseries_allclust(self, dx: pd.DataFrame, labels: np.ndarray, leaves: list[int], gs: gridspec.GridSpec, ts_hspace: int) -> None:
-        """ 
+    def _draw_timeseries_allclust(
+        self,
+        dx: pd.DataFrame,
+        labels: np.ndarray,
+        leaves: list[int],
+        gs: gridspec.GridSpec,
+        ts_hspace: int,
+    ) -> None:
+        """
         Plot time series graphs beside dendrogram
 
         Parameters
@@ -102,8 +114,8 @@ class TimeSeriesHierarchicalClustering:
         ts_hspace: horizontal space in gridspec for plotting time series
         """
 
-        prop_cycle = plt.rcParams['axes.prop_cycle']
-        colors = prop_cycle.by_key()['color']
+        prop_cycle = plt.rcParams["axes.prop_cycle"]
+        colors = prop_cycle.by_key()["color"]
         margin = 7
 
         max_cluster = len(leaves)
@@ -111,7 +123,7 @@ class TimeSeriesHierarchicalClustering:
         leaves = leaves[::-1]
 
         for cnt in range(len(leaves)):
-            plt.subplot(gs[cnt:cnt+1, max_cluster-ts_hspace:max_cluster])
+            plt.subplot(gs[cnt : cnt + 1, max_cluster - ts_hspace : max_cluster])
             plt.axis("off")
 
             # get leafnode name, which corresponds to original data index
@@ -123,11 +135,16 @@ class TimeSeriesHierarchicalClustering:
             color_ts = colors[label]
 
             plt.plot(ts, color=color_ts)
-            plt.text(ts_len+margin, 0, f'class = {label}')
+            plt.text(ts_len + margin, 0, f"class = {label}")
 
-
-    def plot_dendrogram(self, df: pd.DataFrame, labels: np.ndarray, ts_hspace: int = 12, title: str = 'Dendrogram') -> None:
-        """ 
+    def plot_dendrogram(
+        self,
+        df: pd.DataFrame,
+        labels: np.ndarray,
+        ts_hspace: int = 12,
+        title: str = "Dendrogram",
+    ) -> None:
+        """
         Draw agglomerative clustering dendrogram with timeseries graphs for all clusters.
 
         Parameters
@@ -150,8 +167,13 @@ class TimeSeriesHierarchicalClustering:
         plt.subplot(gs[:, 0 : max_cluster - ts_hspace - 1])
         plt.xlabel("Distance")
         plt.ylabel("Cluster")
-        plt.title(title, fontsize=16, weight='bold')
+        plt.title(title, fontsize=16, weight="bold")
 
-        ddata = dendrogram(self.linkage_matrix, orientation="left", color_threshold=sorted(self.model.distances_)[-2], show_leaf_counts=True)
+        ddata = dendrogram(
+            self.linkage_matrix,
+            orientation="left",
+            color_threshold=sorted(self.model.distances_)[-2],
+            show_leaf_counts=True,
+        )
 
         self._draw_timeseries_allclust(df, labels, ddata["leaves"], gs, ts_hspace)

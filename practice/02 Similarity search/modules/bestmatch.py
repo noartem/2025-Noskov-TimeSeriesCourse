@@ -1,6 +1,7 @@
 import numpy as np
 import math
 import copy
+import heapq
 
 from modules.utils import sliding_window, z_normalize
 from modules.metrics import DTW_distance
@@ -9,13 +10,13 @@ from modules.metrics import DTW_distance
 def apply_exclusion_zone(array: np.ndarray, idx: int, excl_zone: int) -> np.ndarray:
     """
     Apply an exclusion zone to an array (inplace)
-    
+
     Parameters
     ----------
     array: the array to apply the exclusion zone to
     idx: the index around which the window should be centered
     excl_zone: size of the exclusion zone
-    
+
     Returns
     -------
     array: the array which is applied the exclusion zone
@@ -28,26 +29,28 @@ def apply_exclusion_zone(array: np.ndarray, idx: int, excl_zone: int) -> np.ndar
     return array
 
 
-def topK_match(dist_profile: np.ndarray, excl_zone: int, topK: int = 3, max_distance: float = np.inf) -> dict:
+def topK_match(
+    dist_profile: np.ndarray,
+    excl_zone: int,
+    topK: int = 3,
+    max_distance: float = np.inf,
+) -> dict:
     """
     Search the topK match subsequences based on distance profile
-    
+
     Parameters
     ----------
     dist_profile: distances between query and subsequences of time series
     excl_zone: size of the exclusion zone
     topK: count of the best match subsequences
     max_distance: maximum distance between query and a subsequence `S` for `S` to be considered a match
-    
+
     Returns
     -------
     topK_match_results: dictionary containing results of algorithm
     """
 
-    topK_match_results = {
-        'indices': [],
-        'distances': []
-    } 
+    topK_match_results = {"indices": [], "distances": []}
 
     dist_profile_len = len(dist_profile)
     dist_profile = np.copy(dist_profile).astype(float)
@@ -61,8 +64,8 @@ def topK_match(dist_profile: np.ndarray, excl_zone: int, topK: int = 3, max_dist
 
         dist_profile = apply_exclusion_zone(dist_profile, min_idx, excl_zone)
 
-        topK_match_results['indices'].append(min_idx)
-        topK_match_results['distances'].append(min_dist)
+        topK_match_results["indices"].append(min_idx)
+        topK_match_results["distances"].append(min_dist)
 
     return topK_match_results
 
@@ -70,7 +73,7 @@ def topK_match(dist_profile: np.ndarray, excl_zone: int, topK: int = 3, max_dist
 class BestMatchFinder:
     """
     Base Best Match Finder
-    
+
     Parameters
     ----------
     excl_zone_frac: exclusion zone fraction
@@ -79,8 +82,14 @@ class BestMatchFinder:
     r: warping window size
     """
 
-    def __init__(self, excl_zone_frac: float = 1, topK: int = 3, is_normalize: bool = True, r: float = 0.05) -> None:
-        """ 
+    def __init__(
+        self,
+        excl_zone_frac: float = 1,
+        topK: int = 3,
+        is_normalize: bool = True,
+        r: float = 0.05,
+    ) -> None:
+        """
         Constructor of class BestMatchFinder
         """
 
@@ -89,15 +98,14 @@ class BestMatchFinder:
         self.is_normalize: bool = is_normalize
         self.r: float = r
 
-
     def _calculate_excl_zone(self, m: int) -> int:
         """
         Calculate the exclusion zone
-        
+
         Parameters
         ----------
         m: length of subsequence
-        
+
         Returns
         -------
         excl_zone: exclusion zone
@@ -107,9 +115,7 @@ class BestMatchFinder:
 
         return excl_zone
 
-
     def perform(self):
-
         raise NotImplementedError
 
 
@@ -118,17 +124,22 @@ class NaiveBestMatchFinder(BestMatchFinder):
     Naive Best Match Finder
     """
 
-    def __init__(self, excl_zone_frac: float = 1, topK: int = 3, is_normalize: bool = True, r: float = 0.05):
+    def __init__(
+        self,
+        excl_zone_frac: float = 1,
+        topK: int = 3,
+        is_normalize: bool = True,
+        r: float = 0.05,
+    ):
         super().__init__(excl_zone_frac, topK, is_normalize, r)
         """ 
         Constructor of class NaiveBestMatchFinder
         """
 
-
     def perform(self, ts_data: np.ndarray, query: np.ndarray) -> dict:
         """
         Search subsequences in a time series that most closely match the query using the naive algorithm
-        
+
         Parameters
         ----------
         ts_data: time series
@@ -140,29 +151,36 @@ class NaiveBestMatchFinder(BestMatchFinder):
         """
 
         query = copy.deepcopy(query)
-        if (len(ts_data.shape) != 2): # time series set
+        if len(ts_data.shape) != 2:  # time series set
             ts_data = sliding_window(ts_data, len(query))
 
         N, m = ts_data.shape
         excl_zone = self._calculate_excl_zone(m)
 
-        dist_profile = np.ones((N,))*np.inf
-        bsf = np.inf
+        dist_profile = np.ones((N,)) * np.inf
 
-        bestmatch = {
-            'index' : [],
-            'distance' : []
-        }
-        
-        # INSERT YOUR CODE
+        if self.is_normalize:
+            query = z_normalize(query)
 
-        return bestmatch
+        for i in range(N):
+            subsequence = ts_data[i]
+
+            if self.is_normalize:
+                subsequence = z_normalize(subsequence)
+
+            dist = DTW_distance(query, subsequence, r=self.r)
+
+            dist_profile[i] = dist
+
+        matches = topK_match(dist_profile, excl_zone, self.topK)
+
+        return {"matches": matches, "dist_profile": dist_profile}
 
 
 class UCR_DTW(BestMatchFinder):
     """
     UCR-DTW Match Finder
-    
+
     Additional parameters
     ----------
     not_pruned_num: number of non-pruned subsequences
@@ -171,84 +189,97 @@ class UCR_DTW(BestMatchFinder):
     lb_KeoghCQ_num: number of subsequences that pruned by LB_KeoghCQ bounding
     """
 
-    def __init__(self, excl_zone_frac: float = 1, topK: int = 3, is_normalize: bool = True, r: float = 0.05):
+    def __init__(
+        self,
+        excl_zone_frac: float = 1,
+        topK: int = 3,
+        is_normalize: bool = True,
+        r: float = 0.05,
+    ):
         super().__init__(excl_zone_frac, topK, is_normalize, r)
         """ 
         Constructor of class UCR_DTW
-        """        
+        """
 
         self.not_pruned_num = 0
         self.lb_Kim_num = 0
         self.lb_KeoghQC_num = 0
         self.lb_KeoghCQ_num = 0
 
-
     def _LB_Kim(self, subs1: np.ndarray, subs2: np.ndarray) -> float:
         """
         Compute LB_Kim lower bound between two subsequences
-        
+
         Parameters
         ----------
         subs1: the first subsequence
         subs2: the second subsequence
-        
+
         Returns
         -------
         lb_Kim: LB_Kim lower bound
         """
 
-        lb_Kim = 0
-        
-        # INSERT YOUR CODE
-
-        return lb_Kim
-
+        return (subs1[0] - subs2[0]) ** 2 + (subs1[-1] - subs2[-1]) ** 2
 
     def _LB_Keogh(self, subs1: np.ndarray, subs2: np.ndarray, r: float) -> float:
         """
         Compute LB_Keogh lower bound between two subsequences
-        
+
         Parameters
         ----------
         subs1: the first subsequence
         subs2: the second subsequence
         r: warping window size
-        
+
         Returns
         -------
         lb_Keogh: LB_Keogh lower bound
         """
 
-        lb_Keogh = 0
+        m = len(subs1)
+        r_win = int(r * m) if r < 1 else int(r)
 
-        # INSERT YOUR CODE
+        # Calculate envelopes U and L for subs1
+        U = np.zeros(m)
+        L = np.zeros(m)
+        for i in range(m):
+            start = max(0, i - r_win)
+            end = min(m, i + r_win + 1)
+            U[i] = np.max(subs1[start:end])
+            L[i] = np.min(subs1[start:end])
 
-        return lb_Keogh
+        # Calculate the sum of squared distances for points of subs2 outside the envelope
+        diff_upper = subs2 - U
+        diff_lower = subs2 - L
 
+        sum_upper = np.sum(np.power(diff_upper[diff_upper > 0], 2))
+        sum_lower = np.sum(np.power(diff_lower[diff_lower < 0], 2))
+
+        return sum_upper + sum_lower
 
     def get_statistics(self) -> dict:
         """
-        Return statistics on the number of pruned and non-pruned subsequences of a time series   
-        
+        Return statistics on the number of pruned and non-pruned subsequences of a time series
+
         Returns
         -------
             dictionary containing statistics
         """
 
         statistics = {
-            'not_pruned_num': self.not_pruned_num,
-            'lb_Kim_num': self.lb_Kim_num,
-            'lb_KeoghCQ_num': self.lb_KeoghCQ_num,
-            'lb_KeoghQC_num': self.lb_KeoghQC_num
+            "not_pruned_num": self.not_pruned_num,
+            "lb_Kim_num": self.lb_Kim_num,
+            "lb_KeoghCQ_num": self.lb_KeoghCQ_num,
+            "lb_KeoghQC_num": self.lb_KeoghQC_num,
         }
 
         return statistics
 
-
     def perform(self, ts_data: np.ndarray, query: np.ndarray) -> dict:
         """
         Search subsequences in a time series that most closely match the query using UCR-DTW algorithm
-        
+
         Parameters
         ----------
         ts_data: time series
@@ -260,21 +291,62 @@ class UCR_DTW(BestMatchFinder):
         """
 
         query = copy.deepcopy(query)
-        if (len(ts_data.shape) != 2): # time series set
+        if len(ts_data.shape) != 2:
             ts_data = sliding_window(ts_data, len(query))
 
         N, m = ts_data.shape
 
         excl_zone = self._calculate_excl_zone(m)
 
-        dist_profile = np.ones((N,))*np.inf
+        dist_profile = np.ones((N,)) * np.inf
         bsf = np.inf
-        
-        bestmatch = {
-            'index' : [],
-            'distance' : []
-        }
 
-        # INSERT YOUR CODE
+        if self.is_normalize:
+            query_norm = z_normalize(query)
+        else:
+            query_norm = query
 
-        return bestmatch
+        self.not_pruned_num = 0
+        self.lb_Kim_num = 0
+        self.lb_KeoghCQ_num = 0
+        self.lb_KeoghQC_num = 0
+
+        top_k_heap = []
+
+        for i in range(N):
+            subsequence = ts_data[i]
+            if self.is_normalize:
+                subsequence_norm = z_normalize(subsequence)
+            else:
+                subsequence_norm = subsequence
+
+            lb_kim = self._LB_Kim(query_norm, subsequence_norm)
+            if lb_kim >= bsf:
+                self.lb_Kim_num += 1
+                continue
+
+            lb_keogh_qc = self._LB_Keogh(query_norm, subsequence_norm, self.r)
+            if lb_keogh_qc >= bsf:
+                self.lb_KeoghQC_num += 1
+                continue
+
+            lb_keogh_cq = self._LB_Keogh(subsequence_norm, query_norm, self.r)
+            if lb_keogh_cq >= bsf:
+                self.lb_KeoghCQ_num += 1
+                continue
+
+            self.not_pruned_num += 1
+            dist = DTW_distance(query_norm, subsequence_norm, r=self.r)
+            dist_profile[i] = dist
+
+            if len(top_k_heap) < self.topK:
+                heapq.heappush(top_k_heap, -dist)
+                if len(top_k_heap) == self.topK:
+                    bsf = -top_k_heap[0]
+            elif dist < bsf:
+                heapq.heappushpop(top_k_heap, -dist)
+                bsf = -top_k_heap[0]
+
+        matches = topK_match(dist_profile, excl_zone, self.topK)
+
+        return {"matches": matches, "dist_profile": dist_profile}

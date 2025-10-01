@@ -7,10 +7,11 @@ from plotly.subplots import make_subplots
 from plotly.offline import init_notebook_mode
 import plotly.graph_objs as go
 import plotly.express as px
+
 plotly.offline.init_notebook_mode(connected=True)
 
 
-def plot_ts_set(ts_set: np.ndarray, title: str = 'Input Time Series Set') -> None:
+def plot_ts_set(ts_set: np.ndarray, title: str = "Input Time Series Set") -> None:
     """
     Plot the time series set
 
@@ -25,36 +26,55 @@ def plot_ts_set(ts_set: np.ndarray, title: str = 'Input Time Series Set') -> Non
     fig = go.Figure()
 
     for i in range(ts_num):
-        fig.add_trace(go.Scatter(x=np.arange(m), y=ts_set[i], line=dict(width=3), name="Time series " + str(i)))
+        fig.add_trace(
+            go.Scatter(
+                x=np.arange(m),
+                y=ts_set[i],
+                line=dict(width=3),
+                name="Time series " + str(i),
+            )
+        )
 
-    fig.update_xaxes(showgrid=False,
-                     title='Time',
-                     title_font=dict(size=22, color='black'),
-                     linecolor='#000',
-                     ticks='outside',
-                     tickfont=dict(size=18, color='black'),
-                     linewidth=2,
-                     tickwidth=2)
-    fig.update_yaxes(showgrid=False,
-                     title='Values',
-                     title_font=dict(size=22, color='black'),
-                     linecolor='#000',
-                     ticks='outside',
-                     tickfont=dict(size=18, color='black'),
-                     zeroline=False,
-                     linewidth=2,
-                     tickwidth=2)
-    fig.update_layout(title=title,
-                      title_font=dict(size=24, color='black'),
-                      plot_bgcolor='rgba(0,0,0,0)',
-                      paper_bgcolor='rgba(0,0,0,0)',
-                      legend=dict(font=dict(size=20, color='black'))
-                      )
+    fig.update_xaxes(
+        showgrid=False,
+        title="Time",
+        title_font=dict(size=22, color="black"),
+        linecolor="#000",
+        ticks="outside",
+        tickfont=dict(size=18, color="black"),
+        linewidth=2,
+        tickwidth=2,
+    )
+    fig.update_yaxes(
+        showgrid=False,
+        title="Values",
+        title_font=dict(size=22, color="black"),
+        linecolor="#000",
+        ticks="outside",
+        tickfont=dict(size=18, color="black"),
+        zeroline=False,
+        linewidth=2,
+        tickwidth=2,
+    )
+    fig.update_layout(
+        title=title,
+        title_font=dict(size=24, color="black"),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        legend=dict(font=dict(size=20, color="black")),
+    )
 
     fig.show(renderer="colab")
 
 
-def mplot2d(x: np.ndarrray, y: np.ndarrray, plot_title: str = None, x_title: str = None, y_title: str = None, trace_titles: np.ndarray = None) -> None:
+def mplot2d(
+    x: np.ndarray,
+    y: np.ndarray,
+    plot_title: str = None,
+    x_title: str = None,
+    y_title: str = None,
+    trace_titles: np.ndarray = None,
+) -> None:
     """
     Multiple 2D Plots on figure for different experiments
 
@@ -73,37 +93,42 @@ def mplot2d(x: np.ndarrray, y: np.ndarrray, plot_title: str = None, x_title: str
     for i in range(y.shape[0]):
         fig.add_trace(go.Scatter(x=x, y=y[i], line=dict(width=3), name=trace_titles[i]))
 
-    fig.update_xaxes(showgrid=False,
-                     title=x_title,
-                     title_font=dict(size=22, color='black'),
-                     linecolor='#000',
-                     ticks='outside',
-                     tickfont=dict(size=18, color='black'),
-                     linewidth=2,
-                     tickwidth=2,
-                     tickvals=x)
-    fig.update_yaxes(showgrid=False,
-                     title=y_title,
-                     title_font=dict(size=22, color='black'),
-                     linecolor='#000',
-                     ticks='outside',
-                     tickfont=dict(size=18, color='black'),
-                     zeroline=False,
-                     linewidth=2,
-                     tickwidth=2)
-    fig.update_layout(title={'text': plot_title, 'x': 0.5, 'xanchor': 'center'},
-                      title_font=dict(size=24, color='black'),
-                      plot_bgcolor='rgba(0,0,0,0)',
-                      paper_bgcolor='rgba(0,0,0,0)',
-                      legend=dict(font=dict(size=20, color='black')),
-                      width=1000,
-                      height=600
-                      )
+    fig.update_xaxes(
+        showgrid=False,
+        title=x_title,
+        title_font=dict(size=22, color="black"),
+        linecolor="#000",
+        ticks="outside",
+        tickfont=dict(size=18, color="black"),
+        linewidth=2,
+        tickwidth=2,
+        tickvals=x,
+    )
+    fig.update_yaxes(
+        showgrid=False,
+        title=y_title,
+        title_font=dict(size=22, color="black"),
+        linecolor="#000",
+        ticks="outside",
+        tickfont=dict(size=18, color="black"),
+        zeroline=False,
+        linewidth=2,
+        tickwidth=2,
+    )
+    fig.update_layout(
+        title={"text": plot_title, "x": 0.5, "xanchor": "center"},
+        title_font=dict(size=24, color="black"),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        legend=dict(font=dict(size=20, color="black")),
+        width=1000,
+        height=600,
+    )
 
     fig.show(renderer="colab")
 
 
-def plot_bestmatch_data(ts: np.ndarrray, query: np.ndarray) -> None:
+def plot_bestmatch_data(ts: np.ndarray, query: np.ndarray) -> None:
     """
     Visualize the input data (time series and query) for the best match task
 
@@ -116,40 +141,66 @@ def plot_bestmatch_data(ts: np.ndarrray, query: np.ndarray) -> None:
     query_len = query.shape[0]
     ts_len = ts.shape[0]
 
-    fig = make_subplots(rows=1, cols=2, column_widths=[0.1, 0.9], subplot_titles=("Query", "Time Series"), horizontal_spacing=0.04)
+    fig = make_subplots(
+        rows=1,
+        cols=2,
+        column_widths=[0.1, 0.9],
+        subplot_titles=("Query", "Time Series"),
+        horizontal_spacing=0.04,
+    )
 
-    fig.add_trace(go.Scatter(x=np.arange(query_len), y=query, line=dict(color=px.colors.qualitative.Plotly[1])),
-                row=1, col=1)
-    fig.add_trace(go.Scatter(x=np.arange(ts_len), y=ts, line=dict(color=px.colors.qualitative.Plotly[0])),
-                row=1, col=2)
+    fig.add_trace(
+        go.Scatter(
+            x=np.arange(query_len),
+            y=query,
+            line=dict(color=px.colors.qualitative.Plotly[1]),
+        ),
+        row=1,
+        col=1,
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=np.arange(ts_len), y=ts, line=dict(color=px.colors.qualitative.Plotly[0])
+        ),
+        row=1,
+        col=2,
+    )
 
-    fig.update_annotations(font=dict(size=24, color='black'))
+    fig.update_annotations(font=dict(size=24, color="black"))
 
-    fig.update_xaxes(showgrid=False,
-                     linecolor='#000',
-                     ticks="outside",
-                     tickfont=dict(size=18, color='black'),
-                     linewidth=1,
-                     tickwidth=1,
-                     mirror=True)
-    fig.update_yaxes(showgrid=False,
-                     linecolor='#000',
-                     ticks="outside",
-                     tickfont=dict(size=18, color='black'),
-                     zeroline=False,
-                     linewidth=1,
-                     tickwidth=1,
-                     mirror=True)
+    fig.update_xaxes(
+        showgrid=False,
+        linecolor="#000",
+        ticks="outside",
+        tickfont=dict(size=18, color="black"),
+        linewidth=1,
+        tickwidth=1,
+        mirror=True,
+    )
+    fig.update_yaxes(
+        showgrid=False,
+        linecolor="#000",
+        ticks="outside",
+        tickfont=dict(size=18, color="black"),
+        zeroline=False,
+        linewidth=1,
+        tickwidth=1,
+        mirror=True,
+    )
 
-    fig.update_layout(plot_bgcolor="rgba(0,0,0,0)",
-                      paper_bgcolor='rgba(0,0,0,0)',
-                      showlegend=False,
-                      title_x=0.5)
+    fig.update_layout(
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        showlegend=False,
+        title_x=0.5,
+    )
 
     fig.show(renderer="colab")
 
 
-def plot_bestmatch_results(ts: np.ndarrray, query: np.ndarrray, bestmatch_results: dict) -> None:
+def plot_bestmatch_results(
+    ts: np.ndarray, query: np.ndarray, bestmatch_results: dict
+) -> None:
     """
     Visualize the best match results
 
@@ -157,13 +208,94 @@ def plot_bestmatch_results(ts: np.ndarrray, query: np.ndarrray, bestmatch_result
     ----------
     ts: time series
     query: query
-    bestmatch_results: output data found by the best match algorithm
+    bestmatch_results: dict containing 'matches' (list of indices) and 'dist_profile' (optional)
     """
 
-    # INSERT YOUR CODE
+    query_len = len(query)
+    ts_len = len(ts)
+    matches = bestmatch_results.get("matches", [])
+
+    fig = make_subplots(
+        rows=1,
+        cols=2,
+        column_widths=[0.1, 0.9],
+        subplot_titles=("Query", "Time Series with Matches"),
+        horizontal_spacing=0.04,
+    )
+
+    # Plot query
+    fig.add_trace(
+        go.Scatter(
+            x=np.arange(query_len),
+            y=query,
+            line=dict(color=px.colors.qualitative.Plotly[1]),
+        ),
+        row=1,
+        col=1,
+    )
+
+    # Plot time series
+    fig.add_trace(
+        go.Scatter(
+            x=np.arange(ts_len),
+            y=ts,
+            line=dict(color=px.colors.qualitative.Plotly[0]),
+        ),
+        row=1,
+        col=2,
+    )
+
+    # Highlight topK matches
+    for idx, match_start in enumerate(matches.get("indices", [])):
+        match_end = match_start + query_len
+        fig.add_trace(
+            go.Scatter(
+                x=np.arange(match_start, match_end),
+                y=ts[match_start:match_end],
+                mode="lines",
+                line=dict(
+                    color=px.colors.qualitative.Plotly[(idx + 2) % 10],
+                    width=4,
+                ),
+                name=f"Match {idx+1}",
+            ),
+            row=1,
+            col=2,
+        )
+
+    fig.update_annotations(font=dict(size=24, color="black"))
+
+    fig.update_xaxes(
+        showgrid=False,
+        linecolor="#000",
+        ticks="outside",
+        tickfont=dict(size=18, color="black"),
+        linewidth=1,
+        tickwidth=1,
+        mirror=True,
+    )
+    fig.update_yaxes(
+        showgrid=False,
+        linecolor="#000",
+        ticks="outside",
+        tickfont=dict(size=18, color="black"),
+        zeroline=False,
+        linewidth=1,
+        tickwidth=1,
+        mirror=True,
+    )
+
+    fig.update_layout(
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        showlegend=True,
+        title_x=0.5,
+    )
+
+    fig.show(renderer="colab")
 
 
-def pie_chart(labels: np.ndarrray, values: np.ndarrray, plot_title='Pie chart') -> None:
+def pie_chart(labels: np.ndarray, values: np.ndarray, plot_title="Pie chart") -> None:
     """
     Build the pie chart
 
@@ -176,11 +308,12 @@ def pie_chart(labels: np.ndarrray, values: np.ndarrray, plot_title='Pie chart') 
     fig = go.Figure(data=[go.Pie(labels=labels, values=values)])
 
     fig.update_traces(textfont_size=20)
-    fig.update_layout(title={'text': plot_title, 'x': 0.5, 'xanchor': 'center'},
-                      title_font=dict(size=24, color='black'),
-                      legend=dict(font=dict(size=20, color='black')),
-                      width=700,
-                      height=500
-                      )
+    fig.update_layout(
+        title={"text": plot_title, "x": 0.5, "xanchor": "center"},
+        title_font=dict(size=24, color="black"),
+        legend=dict(font=dict(size=20, color="black")),
+        width=700,
+        height=500,
+    )
 
     fig.show(renderer="colab")

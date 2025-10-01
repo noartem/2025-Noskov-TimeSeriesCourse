@@ -1095,6 +1095,18 @@ wheels = [
 ]
 
 [[package]]
+name = "mass-ts"
+version = "0.1.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/0e/c8/814623a4c4d19e4e085e8b81d071b02c7b3e88889ecc448fd61870854255/mass_ts-0.1.4.tar.gz", hash = "sha256:1629515379042ec5166454f5bd68d13cb7a0023d6589a4d2e1d9a96e7c4712a2", size = 48936, upload-time = "2019-10-04T18:36:13.481Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/58/90/a66739db6d92edcf51e8c672372305511444b562e175f0f1a53adcfab18f/mass_ts-0.1.4-py2.py3-none-any.whl", hash = "sha256:3c9c41944115c0776d652fa89a33b5870534d153d44af9e25ffb0448abac2a5b", size = 15216, upload-time = "2019-10-04T18:36:11.884Z" },
+]
+
+[[package]]
 name = "matplotlib"
 version = "3.10.6"
 source = { registry = "https://pypi.org/simple" }
@@ -2246,6 +2258,7 @@ dependencies = [
     { name = "imutils" },
     { name = "ipykernel" },
     { name = "jupyter" },
+    { name = "mass-ts" },
     { name = "matplotlib" },
     { name = "numpy" },
     { name = "opencv-python" },
@@ -2261,6 +2274,7 @@ requires-dist = [
     { name = "imutils", specifier = ">=0.5.4" },
     { name = "ipykernel", specifier = ">=6.30.1" },
     { name = "jupyter", specifier = ">=1.1.1" },
+    { name = "mass-ts", specifier = ">=0.1.4" },
     { name = "matplotlib", specifier = ">=3.10.6" },
     { name = "numpy", specifier = ">=2.3.3" },
     { name = "opencv-python", specifier = ">=4.11.0.86" },

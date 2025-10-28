@@ -1,9 +1,5 @@
 import numpy as np
-import pandas as pd
-import math
-
 import stumpy
-from stumpy import config
 
 
 def compute_mp(ts1: np.ndarray, m: int, exclusion_zone: int = None, ts2: np.ndarray = None):
@@ -22,12 +18,16 @@ def compute_mp(ts1: np.ndarray, m: int, exclusion_zone: int = None, ts2: np.ndar
     output: the matrix profile structure
             (matrix profile, matrix profile index, subsequence length, exclusion zone, the first and second time series)
     """
-    
-    # INSERT YOUR CODE
 
-    return {'mp': mp[:, 0],
-            'mpi': mp[:, 1],
-            'm' : m,
-            'excl_zone': exclusion_zone,
-            'data': {'ts1' : ts1, 'ts2' : ts2}
-            }
+    if ts2 is None:
+        mp = stumpy.stump(ts1, m)
+    else:
+        mp = stumpy.stump(ts1, m, T_B=ts2)
+
+    return {
+        'mp': mp[:, 0],
+        'mpi': mp[:, 1].astype(int),
+        'm' : m,
+        'excl_zone': exclusion_zone,
+        'data': {'ts1': ts1, 'ts2': ts2}
+    }

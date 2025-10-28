@@ -11,7 +11,7 @@ plotly.offline.init_notebook_mode(connected=True)
 from modules.mp import *
 
 
-def heads_tails(consumptions: dict, cutoff, house_idx: list) -> dict, dict:
+def heads_tails(consumptions: dict, cutoff, house_idx: list) -> tuple[dict, dict]:
     """
     Split time series into two parts: Head and Tail
 
@@ -54,11 +54,31 @@ def meter_swapping_detection(heads: dict, tails: dict, house_idx: dict, m: int) 
 
     eps = 0.001
 
-    min_score = {}
+    min_score = np.inf
+    best_pair = {'i': None, 'j': None, 'mp_j': None}
 
-    # INSERT YOUR CODE
+    for i in house_idx:
+        H_i = heads[f"H_{i}"].values.flatten()
+        T_i = tails[f"T_{i}"].values.flatten()
+
+        for j in house_idx:
+            if i == j:
+                continue
+
+            T_j = tails[f"T_{j}"].values.flatten()
+
+            mp_ij = compute_mp(m=m, ts1=H_i, ts2=T_j)
+            mp_ii = compute_mp(m=m, ts1=H_i, ts2=T_i)
+
+            score = np.min(mp_ij['mp']) / (np.min(mp_ii['mp']) + eps)
+
+            print(f"score={score}, min_score={min_score}, pair=({i}, {j})")
+
+            if score < min_score:
+                min_score = score
+                best_pair = {'i': i, 'j': j, 'mp_j': mp_ij}
     
-    return min_score
+    return best_pair
 
 
 def plot_consumptions_ts(consumptions: dict, cutoff, house_idx: list):
